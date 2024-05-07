@@ -1,0 +1,15 @@
+appid,status
+alert_manager,Downloaded
+aplura_viz_markdown,Downloaded
+aplura_viz_tolstoy_target,Downloaded
+bullet_graph_app,Downloaded
+calendar_heatmap_app,Downloaded
+cisco_ios,Downloaded
+config_quest,Downloaded
+cuviz_water_gauge,Downloaded
+DA-ITSI-ContentLibrary,Downloaded
+analysis_of_splunkbase_apps,"Skipped, latest version is same as current version"
+aplura_viz_donut,"Skipped, latest version is same as current version"
+aplura_viz_scatterplot_matrix,"Skipped, latest version is same as current version"
+custom-image-map-viz,"Skipped, latest version is same as current version"
+d3_splunk_extentions,"Skipped, latest version is same as current version"
