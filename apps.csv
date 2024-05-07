@@ -1,6 +1,5 @@
 label,version,details
 "Alert Manager","3.0.7","https://apps.splunk.com/apps/id/alert_manager"
-"Alto Dashboard","0.1","https://apps.splunk.com/apps/id/alto_dashboard_alert"
 "Analysis of SplunkBase Apps","5.4.3","https://apps.splunk.com/apps/id/analysis_of_splunkbase_apps"
 "Custom Visualization - donut","1.0.3","https://apps.splunk.com/apps/id/aplura_viz_donut"
 "Custom Visualization - markdown","1.0.2","https://apps.splunk.com/apps/id/aplura_viz_markdown"
