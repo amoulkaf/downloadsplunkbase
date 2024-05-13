@@ -16,7 +16,7 @@ def authenticate():
         'username': login_data['username'],
         'password': login_data['password']
     }
-    response = requests.post(login_url, data=payload)
+    response = requests.post(login_url, data=payload, verify=False)
     if response.status_code == 200:
         logging.info("Authentication successful.")
         return response.cookies.get_dict()
@@ -37,7 +37,7 @@ def download(app, cookies, downloaded_apps, skipped_apps):
     # Download only if the latest version is different from the current version
     if latest_version != current_version:
         download_url = f"http://splunkbase.splunk.com/app/{uid}/release/{latest_version}/download/"
-        response = requests.get(download_url, cookies=cookies)
+        response = requests.get(download_url, cookies=cookies, verify=False)
         if response.status_code == 200:
             with open(file_name, 'wb') as file:
                 file.write(response.content)
