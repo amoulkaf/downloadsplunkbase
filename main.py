@@ -82,13 +82,14 @@ def main():
                             'download_link': download_link,
                             'found_in_splunkbase': 'yes'
                         })
-                        results.append(row)
+                    else:
+                        row['found_in_splunkbase'] = 'false'
+                    results.append(row)
                 else:
                     row['found_in_splunkbase'] = 'false'
+                    results.append(row)
                     if status == "404":
                         private_apps.append(row)
-                    else:
-                        results.append(row)
 
         # Writing data to the main CSV
         with open(output_file, mode='w', newline='') as csvfile:
