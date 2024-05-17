@@ -64,13 +64,13 @@ def create_migration_plan(input_file, output_file):
 
                 migration_plan.append({
                     'app_name': app_name,
-                    'current_version': current_version,
-                    'current_version_compatibility': current_version_compatibility,
                     'upgrade_status': upgrade_status,
+                    'current_version': current_version,
                     'upgrade_version': upgrade_version,
+                    'current_version_compatibility': current_version_compatibility,
+                    'latest_version_compatibility': latest_version_compatibility_str,
                     'comment': comment,
-                    'download_link': download_link,
-                    'latest_version_compatibility': latest_version_compatibility_str
+                    'download_link': download_link
                 })
 
         with open(output_file, mode='w', newline='') as csvfile:
