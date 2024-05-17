@@ -42,6 +42,14 @@ def find_version_compatibility(releases, version):
     return 'N/A'
 
 
+def find_9_and_8_compatibility(releases):
+    for release in releases:
+        splunk_compatibility = release.get('splunk_compatibility', [])
+        if any("9." in version for version in splunk_compatibility) and any("8." in version for version in splunk_compatibility):
+            return release.get('title')
+    return 'none'
+
+
 def main():
     input_file = 'apps.csv'
     output_file = 'enhanced_app_data.csv'
@@ -55,7 +63,8 @@ def main():
             fieldnames = reader.fieldnames + ['uid', 'appid', 'is_archived', 'current_version', 'latest_version',
                                               'release_published_time', 'latest_version_compatibility',
                                               'current_version_compatibility', 'latest_version_installed',
-                                              'is_current_version_compatible_9', 'download_link', 'found_in_splunkbase']
+                                              'is_current_version_compatible_9', 'download_link', 'found_in_splunkbase',
+                                              '9_and_8_compatibility']
 
             for row in reader:
                 redirect_url, status = fetch_redirect_url(row['details'])
@@ -63,8 +72,8 @@ def main():
                     app_id = extract_app_id(redirect_url)
                     app_details, download_link = fetch_app_details(app_id)
                     if app_details:
-                        current_version_compatibility = find_version_compatibility(app_details.get('releases', []),
-                                                                                   row['version'])
+                        current_version_compatibility = find_version_compatibility(app_details.get('releases', []), row['version'])
+                        compatibility_9_and_8 = find_9_and_8_compatibility(app_details.get('releases', []))
 
                         row.update({
                             'uid': app_details.get('uid', 'N/A'),
@@ -73,20 +82,25 @@ def main():
                             'current_version': row['version'],
                             'latest_version': app_details.get('release', {}).get('title', 'N/A'),
                             'release_published_time': app_details.get('release', {}).get('published_time', 'N/A'),
-                            'latest_version_compatibility': app_details.get('release', {}).get('splunk_compatibility',
-                                                                                               'N/A'),
+                            'latest_version_compatibility': app_details.get('release', {}).get('splunk_compatibility', 'N/A'),
                             'current_version_compatibility': current_version_compatibility,
-                            'latest_version_installed': str(
-                                row['version'] == app_details.get('release', {}).get('title', 'N/A')),
+                            'latest_version_installed': str(row['version'] == app_details.get('release', {}).get('title', 'N/A')),
                             'is_current_version_compatible_9': str("9.1" in current_version_compatibility),
                             'download_link': download_link,
-                            'found_in_splunkbase': 'yes'
+                            'found_in_splunkbase': 'yes',
+                            '9_and_8_compatibility': compatibility_9_and_8
                         })
                     else:
-                        row['found_in_splunkbase'] = 'false'
+                        row.update({
+                            'found_in_splunkbase': 'false',
+                            '9_and_8_compatibility': 'none'
+                        })
                     results.append(row)
                 else:
-                    row['found_in_splunkbase'] = 'false'
+                    row.update({
+                        'found_in_splunkbase': 'false',
+                        '9_and_8_compatibility': 'none'
+                    })
                     results.append(row)
                     if status == "404":
                         private_apps.append(row)
@@ -99,7 +113,7 @@ def main():
 
         # Writing data to the private apps CSV
         with open(private_apps_file, mode='w', newline='') as csvfile:
-            private_fieldnames = reader.fieldnames + ['found_in_splunkbase']
+            private_fieldnames = reader.fieldnames + ['found_in_splunkbase', '9_and_8_compatibility']
             writer = csv.DictWriter(csvfile, fieldnames=private_fieldnames)
             writer.writeheader()
             writer.writerows(private_apps)
