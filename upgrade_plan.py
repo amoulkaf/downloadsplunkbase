@@ -12,8 +12,8 @@ def create_migration_plan(input_file, output_file):
         with open(input_file, newline='', mode='r') as csvfile:
             reader = csv.DictReader(csvfile)
             fieldnames = [
-                'app_name', 'current_version', 'upgrade_status', 'upgrade_version',
-                'comment', 'download_link', 'latest_version_compatibility'
+                'app_name', 'current_version', 'current_version_compatibility', 'upgrade_status',
+                'upgrade_version', 'comment', 'download_link', 'latest_version_compatibility'
             ]
 
             for row in reader:
@@ -65,6 +65,7 @@ def create_migration_plan(input_file, output_file):
                 migration_plan.append({
                     'app_name': app_name,
                     'current_version': current_version,
+                    'current_version_compatibility': current_version_compatibility,
                     'upgrade_status': upgrade_status,
                     'upgrade_version': upgrade_version,
                     'comment': comment,
