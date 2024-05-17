@@ -55,7 +55,7 @@ def main():
             fieldnames = reader.fieldnames + ['uid', 'appid', 'is_archived', 'current_version', 'latest_version',
                                               'release_published_time', 'latest_version_compatibility',
                                               'current_version_compatibility', 'latest_version_installed',
-                                              'is_current_version_compatible_9', 'download_link']
+                                              'is_current_version_compatible_9', 'download_link', 'found_in_splunkbase']
 
             for row in reader:
                 redirect_url, status = fetch_redirect_url(row['details'])
@@ -79,11 +79,16 @@ def main():
                             'latest_version_installed': str(
                                 row['version'] == app_details.get('release', {}).get('title', 'N/A')),
                             'is_current_version_compatible_9': str("9.1" in current_version_compatibility),
-                            'download_link': download_link
+                            'download_link': download_link,
+                            'found_in_splunkbase': 'yes'
                         })
                         results.append(row)
-                elif status == "404":
-                    private_apps.append(row)
+                else:
+                    row['found_in_splunkbase'] = 'false'
+                    if status == "404":
+                        private_apps.append(row)
+                    else:
+                        results.append(row)
 
         # Writing data to the main CSV
         with open(output_file, mode='w', newline='') as csvfile:
@@ -93,14 +98,14 @@ def main():
 
         # Writing data to the private apps CSV
         with open(private_apps_file, mode='w', newline='') as csvfile:
-            private_fieldnames = reader.fieldnames  # Assuming original fields for private apps
+            private_fieldnames = reader.fieldnames + ['found_in_splunkbase']
             writer = csv.DictWriter(csvfile, fieldnames=private_fieldnames)
             writer.writeheader()
             writer.writerows(private_apps)
 
         logging.info(f"Data written to {output_file} and {private_apps_file} successfully.")
     except Exception as e:
-        logging
+        logging.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
