@@ -1,13 +1,12 @@
 import csv
 import logging
+import argparse  # Import argparse for command-line parsing
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 def create_migration_plan(input_file, output_file):
     migration_plan = []
-
     try:
         with open(input_file, newline='', mode='r') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -45,22 +44,11 @@ def create_migration_plan(input_file, output_file):
                             if any('9.' in version for version in latest_version_compatibility):
                                 upgrade_status = 'update after upgrade'
                                 comment = 'No cross compatibility version, latest version compatible with 9'
-                                upgrade_version = ''
+                                upgrade_version = latest_version
                             else:
-                                if any('8.' in version for version in latest_version_compatibility):
-                                    upgrade_status = 'Not compatible with Splunk 9'
-                                    comment = 'Latest version is only compatible with Splunk 8'
-                                    upgrade_version = ''
-                                else:
-                                    upgrade_status = 'Not compatible with Splunk 9'
-                                    if latest_version_compatibility:
-                                        highest_version = max(latest_version_compatibility,
-                                                              key=lambda v: [int(x) if x.isdigit() else x for x in
-                                                                             v.split('.')])
-                                    else:
-                                        highest_version = 'compatibility not available'
-                                    comment = f'Compatibility support stopped at Splunk {highest_version}'
-                                    upgrade_version = 'None' if highest_version == 'compatibility not available' else ''
+                                upgrade_status = 'Not compatible with Splunk 9'
+                                comment = 'Latest version compatibility issues'
+                                upgrade_version = latest_version
 
                 migration_plan.append({
                     'app_name': app_name,
@@ -82,6 +70,18 @@ def create_migration_plan(input_file, output_file):
     except Exception as e:
         logging.error(f"An error occurred: {e}")
 
+def main(platform):
+    if platform == "indexer":
+        input_file = 'enhanced/enhanced_apps_indexer.csv'
+        output_file = 'migration_plan/indexer_plan.csv'
+    elif platform == "searchhead":
+        input_file = 'enhanced/enhanced_apps_searchhead.csv'
+        output_file = 'migration_plan/searchhead_plan.csv'
 
-# Generate the migration plan CSV file
-create_migration_plan('enhanced_app_data.csv', 'migration_plan.csv')
+    create_migration_plan(input_file, output_file)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate migration plans based on the platform.')
+    parser.add_argument('platform', choices=['indexer', 'searchhead'], help='Platform type: indexer or searchhead')
+    args = parser.parse_args()
+    main(args.platform)
