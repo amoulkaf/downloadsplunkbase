@@ -1,10 +1,10 @@
 import csv
 import requests
 import logging
+import argparse  # Import argparse for command-line parsing
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 def fetch_redirect_url(url):
     try:
@@ -19,7 +19,6 @@ def fetch_redirect_url(url):
         return None, None
     return None, None
 
-
 def fetch_app_details(app_id):
     try:
         api_url = f"https://splunkbase.splunk.com/api/v1/app/{app_id}/?order=latest&include=support,created_by,categories,icon,screenshots,rating,releases,documentation,releases.content,releases.splunk_compatibility,releases.cim_compatibility,releases.install_method_single,releases.install_method_distributed,release,release.content,release.cim_compatibility,release.install_method_single,release.install_method_distributed,release.splunk_compatibility"
@@ -30,17 +29,14 @@ def fetch_app_details(app_id):
         logging.error(f"Error fetching app details for app ID {app_id}: {e}")
     return {}, None
 
-
 def extract_app_id(url):
     return url.split('/')[-1]
-
 
 def find_version_compatibility(releases, version):
     for release in releases:
         if release.get('title') == version:
             return release.get('splunk_compatibility', 'N/A')
     return 'N/A'
-
 
 def find_9_and_8_compatibility(releases):
     for release in releases:
@@ -49,11 +45,16 @@ def find_9_and_8_compatibility(releases):
             return release.get('title')
     return 'none'
 
+def main(platform):
+    if platform == "indexer":
+        input_file = 'app_input/apps-indexer.csv'
+        output_file = 'enhanced/enhanced_apps_indexer.csv'
+        private_apps_file = 'enhanced/private_apps_indexer.csv'
+    elif platform == "searchhead":
+        input_file = 'app_input/apps-shc.csv'
+        output_file = 'enhanced/enhanced_apps_shc.csv'
+        private_apps_file = 'enhanced/private_apps_shc.csv'
 
-def main():
-    input_file = 'apps.csv'
-    output_file = 'enhanced_app_data.csv'
-    private_apps_file = 'private_apps.csv'
     results = []
     private_apps = []
 
@@ -65,7 +66,6 @@ def main():
                                               'current_version_compatibility', 'latest_version_installed',
                                               'is_current_version_compatible_9', 'download_link', 'found_in_splunkbase',
                                               '9_and_8_compatibility']
-
             for row in reader:
                 redirect_url, status = fetch_redirect_url(row['details'])
                 if redirect_url:
@@ -122,6 +122,8 @@ def main():
     except Exception as e:
         logging.error(f"An error occurred: {e}")
 
-
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Process platform type for app details extraction.')
+    parser.add_argument('platform', choices=['indexer', 'searchhead'], help='Platform type: indexer or searchhead')
+    args = parser.parse_args()
+    main(args.platform)
