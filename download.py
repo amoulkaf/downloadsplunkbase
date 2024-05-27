@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import logging
+import sys  # Import sys to access command-line arguments
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -34,7 +35,6 @@ def download(app, cookies, downloaded_apps, skipped_apps):
     current_version = app['current_version']
     file_name = os.path.join(directory, f"{appid}.tgz")
 
-    # Download only if the latest version is different from the current version
     if latest_version != current_version:
         download_url = f"http://splunkbase.splunk.com/app/{uid}/release/{latest_version}/download/"
         response = requests.get(download_url, cookies=cookies, verify=False)
@@ -51,7 +51,12 @@ def download(app, cookies, downloaded_apps, skipped_apps):
         logging.info(f"Skipped {file_name}, as the latest version is the same as the current version.")
 
 def main():
-    input_file = 'enhanced_app_data.csv'
+    # Check for command-line arguments for the input file
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]  # Use the first command-line argument as the input file
+    else:
+        input_file = 'enhanced_app_data.csv'  # Default file if no argument is provided
+
     download_report = 'download_report.csv'
     cookies = authenticate()
     downloaded_apps = []
@@ -63,7 +68,6 @@ def main():
             for app in reader:
                 download(app, cookies, downloaded_apps, skipped_apps)
 
-        # Writing the download report
         with open(download_report, mode='w', newline='') as csvfile:
             fieldnames = ['appid', 'status']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
