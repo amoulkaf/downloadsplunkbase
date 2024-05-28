@@ -91,3 +91,10 @@ def main(platform):
     base_dir = 'migration_plan'
     platform_dir = os.path.join(base_dir, platform)
     input_file = os.path.join('enhanced', f'enhanced_apps_{platform}.csv')
+    create_migration_plan(input_file, platform_dir)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate migration plans based on the platform.')
+    parser.add_argument('platform', choices=['indexer', 'searchhead'], help='Platform type: indexer or searchhead')
+    args = parser.parse_args()
+    main(args.platform)
