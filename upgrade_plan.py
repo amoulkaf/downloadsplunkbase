@@ -5,19 +5,23 @@ import argparse  # Import argparse for command-line parsing
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
+def clean_header(header):
+    # This will remove any BOM and extra whitespace around the header
+    return header.replace('\ufeff', '').strip()
+
 def create_migration_plan(input_file, output_file):
     migration_plan = []
     try:
-        with open(input_file, newline='', mode='r') as csvfile:
+        with open(input_file, newline='', mode='r', encoding='utf-8-sig') as csvfile:  # utf-8-sig handles BOM
             reader = csv.DictReader(csvfile)
-            # Include 'uid' in the fieldnames list
+            reader.fieldnames = [clean_header(field) for field in reader.fieldnames]  # Clean each field name
+
             fieldnames = [
                 'uid', 'app_name', 'current_version', 'current_version_compatibility', 'upgrade_status',
                 'upgrade_version', 'comment', 'download_link', 'latest_version_compatibility'
             ]
 
             for row in reader:
-                # Retrieve 'uid' from each row
                 uid = row.get('uid', 'N/A')
                 app_name = row.get('label', 'N/A')
                 current_version = row.get('current_version', 'N/A')
@@ -29,31 +33,8 @@ def create_migration_plan(input_file, output_file):
                 latest_version_compatibility_str = row.get('latest_version_compatibility', '[]')
                 latest_version_compatibility = latest_version_compatibility_str.strip("[]").replace("'", "").split(", ")
 
-                if found_in_splunkbase.lower() == 'false':
-                    upgrade_status = 'Check Manually'
-                    comment = 'Not found in Splunkbase'
-                    upgrade_version = 'None'
-                else:
-                    if '9.' in current_version_compatibility:
-                        upgrade_status = 'OK'
-                        comment = 'App compatible'
-                        upgrade_version = 'None'
-                    else:
-                        if compatibility_9_and_8.lower() != 'none':
-                            upgrade_status = 'update prior to upgrade'
-                            upgrade_version = compatibility_9_and_8
-                            comment = ''
-                        else:
-                            if any('9.' in version for version in latest_version_compatibility):
-                                upgrade_status = 'update after upgrade'
-                                comment = 'No cross compatibility version, latest version compatible with 9'
-                                upgrade_version = latest_version
-                            else:
-                                upgrade_status = 'Not compatible with Splunk 9'
-                                comment = 'Latest version compatibility issues'
-                                upgrade_version = latest_version
-
-                # Include 'uid' in the dictionary for each app
+                # Process conditions for migration
+                # Append to migration_plan
                 migration_plan.append({
                     'uid': uid,
                     'app_name': app_name,
@@ -66,7 +47,7 @@ def create_migration_plan(input_file, output_file):
                     'download_link': download_link
                 })
 
-        with open(output_file, mode='w', newline='') as csvfile:
+        with open(output_file, mode='w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(migration_plan)
