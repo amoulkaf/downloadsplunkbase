@@ -33,8 +33,31 @@ def create_migration_plan(input_file, output_file):
                 latest_version_compatibility_str = row.get('latest_version_compatibility', '[]')
                 latest_version_compatibility = latest_version_compatibility_str.strip("[]").replace("'", "").split(", ")
 
-                # Process conditions for migration
-                # Append to migration_plan
+                if found_in_splunkbase.lower() == 'false':
+                    upgrade_status = 'Check Manually'
+                    comment = 'Not found in Splunkbase'
+                    upgrade_version = 'None'
+                else:
+                    if '9.' in current_version_compatibility:
+                        upgrade_status = 'OK'
+                        comment = 'App compatible'
+                        upgrade_version = 'None'
+                    else:
+                        if compatibility_9_and_8.lower() != 'none':
+                            upgrade_status = 'update prior to upgrade'
+                            upgrade_version = compatibility_9_and_8
+                            comment = ''
+                        else:
+                            if any('9.' in version for version in latest_version_compatibility):
+                                upgrade_status = 'update after upgrade'
+                                comment = 'No cross compatibility version, latest version compatible with 9'
+                                upgrade_version = latest_version
+                            else:
+                                upgrade_status = 'Not compatible with Splunk 9'
+                                comment = 'Latest version compatibility issues'
+                                upgrade_version = latest_version
+
+                # Include all the details in the dictionary for each app
                 migration_plan.append({
                     'uid': uid,
                     'app_name': app_name,
