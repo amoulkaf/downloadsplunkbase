@@ -24,8 +24,7 @@ def authenticate():
     else:
         raise Exception(f"Authentication failed with status code: {response.status_code}")
 
-def download(app, cookies, downloaded_apps, skipped_apps):
-    directory = "apps"
+def download(app, cookies, downloaded_apps, skipped_apps, directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -51,30 +50,32 @@ def download(app, cookies, downloaded_apps, skipped_apps):
         logging.info(f"Skipped {file_name}, as the latest version is the same as the current version.")
 
 def main():
-    # Check for command-line arguments for the input file
-    if len(sys.argv) > 1:
+    # Check for command-line arguments for the input and output file paths
+    if len(sys.argv) > 2:
         input_file = sys.argv[1]  # Use the first command-line argument as the input file
+        output_file = sys.argv[2]  # Use the second command-line argument as the output file
     else:
-        input_file = 'enhanced_app_data.csv'  # Default file if no argument is provided
+        input_file = 'enhanced_app_data.csv'  # Default input file if no argument is provided
+        output_file = 'download_report.csv'   # Default output file if no argument is provided
 
-    download_report = 'download_report.csv'
     cookies = authenticate()
     downloaded_apps = []
     skipped_apps = []
+    directory = "apps"  # Folder to save downloaded apps
 
     try:
         with open(input_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for app in reader:
-                download(app, cookies, downloaded_apps, skipped_apps)
+                download(app, cookies, downloaded_apps, skipped_apps, directory)
 
-        with open(download_report, mode='w', newline='') as csvfile:
+        with open(output_file, mode='w', newline='') as csvfile:
             fieldnames = ['appid', 'status']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for app, status in downloaded_apps + skipped_apps:
                 writer.writerow({'appid': app, 'status': status})
-        logging.info(f"Download report saved to {download_report}.")
+        logging.info(f"Download report saved to {output_file}.")
     except Exception as e:
         logging.error(f"An error occurred while processing downloads: {e}")
 
