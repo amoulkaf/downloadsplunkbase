@@ -61,7 +61,7 @@ def main():
     cookies = authenticate()
     downloaded_apps = []
     skipped_apps = []
-    directory = "apps"  # Folder to save downloaded apps
+    directory = os.path.dirname(output_file)  # Folder to save downloaded apps, derived from the output file path
 
     try:
         with open(input_file, newline='') as csvfile:
