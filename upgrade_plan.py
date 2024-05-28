@@ -10,12 +10,15 @@ def create_migration_plan(input_file, output_file):
     try:
         with open(input_file, newline='', mode='r') as csvfile:
             reader = csv.DictReader(csvfile)
+            # Include 'uid' in the fieldnames list
             fieldnames = [
-                'app_name', 'current_version', 'current_version_compatibility', 'upgrade_status',
+                'uid', 'app_name', 'current_version', 'current_version_compatibility', 'upgrade_status',
                 'upgrade_version', 'comment', 'download_link', 'latest_version_compatibility'
             ]
 
             for row in reader:
+                # Retrieve 'uid' from each row
+                uid = row.get('uid', 'N/A')
                 app_name = row.get('label', 'N/A')
                 current_version = row.get('current_version', 'N/A')
                 latest_version = row.get('latest_version', 'N/A')
@@ -50,7 +53,9 @@ def create_migration_plan(input_file, output_file):
                                 comment = 'Latest version compatibility issues'
                                 upgrade_version = latest_version
 
+                # Include 'uid' in the dictionary for each app
                 migration_plan.append({
+                    'uid': uid,
                     'app_name': app_name,
                     'upgrade_status': upgrade_status,
                     'current_version': current_version,
