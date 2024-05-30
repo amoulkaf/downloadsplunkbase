@@ -6,58 +6,48 @@
   become_user: splunk
   gather_facts: false
 
-  vars_prompt:
-    - name: "gitlab_repo"
-      prompt: "Enter the GitLab repository URL"
-      private: no
-    - name: "gitlab_release_tag"
-      prompt: "Enter the GitLab release tag"
-      private: no
+  vars_files:
+    - vars/gitlab_vars.yml  # Path to the YAML file with gitlab_repo and gitlab_release_tag defined
 
   vars:
-    staging_dir: '/tmp/{{ ansible_date_time.epoch }}/{{ inventory_hostname }}'
+    download_url: "{{ gitlab_repo }}/splunk-master-shcluster/-/archive/{{ gitlab_release_tag }}/filename.tar.gz"
+    local_staging_dir: '/tmp/{{ ansible_date_time.epoch }}/{{ inventory_hostname }}'
     splunk_apps_dir: '/opt/splunk/etc/shcluster/apps'
-    source_dir: '/tmp/source_apps'  # Define the source directory for apps
+    local_release_archive: "{{ local_staging_dir }}/filename.tar.gz"
 
   tasks:
     - name: Cleanup old staging directory
       ansible.builtin.file:
-        path: "{{ staging_dir }}"
+        path: "{{ local_staging_dir }}"
         state: absent
       delegate_to: localhost
 
     - name: Ensure staging directory exists
       ansible.builtin.file:
-        path: "{{ staging_dir }}"
+        path: "{{ local_staging_dir }}"
         state: directory
-        mode: '0700'
+        mode: '0755'
       delegate_to: localhost
 
-    - name: Check existence of Splunk apps source directory
-      ansible.builtin.stat:
-        path: "{{ source_dir }}"
-      register: source_dir_stat
+    - name: Download the release archive from GitLab
+      ansible.builtin.get_url:
+        url: "{{ download_url }}"
+        dest: "{{ local_release_archive }}"
+        mode: '0644'
       delegate_to: localhost
 
-    - name: Assert source directory exists
-      ansible.builtin.assert:
-        that:
-          - source_dir_stat.stat.exists
-        fail_msg: "Source directory {{ source_dir }} does not exist. Check configuration and rerun the playbook."
-
-    - name: Fetch release from GitLab
-      ansible.builtin.git:
-        repo: "{{ gitlab_repo }}"
-        dest: "{{ staging_dir }}"
-        version: "{{ gitlab_release_tag }}"
-        force: yes
+    - name: Extract the release archive
+      ansible.builtin.unarchive:
+        src: "{{ local_release_archive }}"
+        dest: "{{ local_staging_dir }}"
+        remote_src: yes
       delegate_to: localhost
 
     - name: Copy release to Splunk apps directory
       ansible.builtin.copy:
-        src: "{{ staging_dir }}/"
+        src: "{{ local_staging_dir }}/"
         dest: "{{ splunk_apps_dir }}"
-        remote_src: true
+        remote_src: yes
 
     - name: Trigger Splunk to reload apps
       ansible.builtin.command: '/opt/splunk/bin/splunk apply shcluster-bundle -target captain_url -auth admin:changeme'
