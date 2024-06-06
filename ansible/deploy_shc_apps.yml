@@ -1,64 +1,43 @@
 ---
-- name: Deploy Release to Splunk Search Head Cluster
-  hosts: searchhead_deployers
-  become: true
-  become_method: sudo
-  become_user: splunk
-  gather_facts: false
+#
+#- name: Cleanup old staging directory
+#  ansible.builtin.file:
+#    path: "{{ local_staging_dir }}"
+#    state: absent
+#  delegate_to: localhost
 
-  vars_files:
-    - vars/gitlab_vars.yml  # Path to the YAML file with gitlab_repo and gitlab_release_tag defined
+- name: Ensure staging directory exists
+  ansible.builtin.file:
+    path: "{{ local_staging_dir }}"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
 
-  vars:
-    download_url: "{{ gitlab_repo }}/splunk-master-shcluster/-/archive/{{ gitlab_release_tag }}/filename.tar.gz"
-    local_staging_dir: '/tmp/{{ ansible_date_time.epoch }}/{{ inventory_hostname }}'
-    splunk_apps_dir: '/opt/splunk/etc/shcluster/apps'
-    local_release_archive: "{{ local_staging_dir }}/filename.tar.gz"
+- name: Download the release archive from GitLab
+  ansible.builtin.get_url:
+    url: "{{ download_url }}"
+    dest: "{{ local_release_archive }}"
+    mode: '0644'
+  delegate_to: localhost
 
-  tasks:
-    - name: Cleanup old staging directory
-      ansible.builtin.file:
-        path: "{{ local_staging_dir }}"
-        state: absent
-      delegate_to: localhost
+- name: Extract the release archive
+  ansible.builtin.unarchive:
+    src: "{{ local_release_archive }}"
+    dest: "{{ local_staging_dir }}"
+    remote_src: yes
+  delegate_to: localhost
 
-    - name: Ensure staging directory exists
-      ansible.builtin.file:
-        path: "{{ local_staging_dir }}"
-        state: directory
-        mode: '0755'
-      delegate_to: localhost
+---
 
-    - name: Download the release archive from GitLab
-      ansible.builtin.get_url:
-        url: "{{ download_url }}"
-        dest: "{{ local_release_archive }}"
-        mode: '0644'
-      delegate_to: localhost
+#- name: Copy release to Splunk apps directory
+#  ansible.builtin.copy:
+#    src: "{{ local_staging_dir }}/"
+#    dest: "{{ splunk_apps_dir }}"
+#    remote_src: yes
+#
+#- name: Trigger Splunk to reload apps
+#  ansible.builtin.command: '/opt/splunk/bin/splunk apply shcluster-bundle -target captain_url -auth admin:changeme'
+#  delegate_to: localhost
+#  become: true
+#  become_user: splunk
 
-    - name: Extract the release archive
-      ansible.builtin.unarchive:
-        src: "{{ local_release_archive }}"
-        dest: "{{ local_staging_dir }}"
-        remote_src: yes
-      delegate_to: localhost
-
-    - name: Copy release to Splunk apps directory
-      ansible.builtin.copy:
-        src: "{{ local_staging_dir }}/"
-        dest: "{{ splunk_apps_dir }}"
-        remote_src: yes
-
-    - name: Trigger Splunk to reload apps
-      ansible.builtin.command: '/opt/splunk/bin/splunk apply shcluster-bundle -target captain_url -auth admin:changeme'
-      delegate_to: localhost
-      become: true
-      become_user: splunk
-
-  handlers:
-    - name: Restart Splunk
-      ansible.builtin.service:
-        name: splunk
-        state: restarted
-      become: true
-      become_user: splunk
